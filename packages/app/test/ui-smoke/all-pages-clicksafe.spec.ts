@@ -162,6 +162,7 @@ const CORE_ROUTE_PROBES: readonly RouteProbe[] = [
   {
     name: "connectors",
     path: "/connectors",
+    expectedUrl: /\/connectors(?:#connectors)?$/,
     readyChecks: [{ selector: "#root" }],
   },
   {
