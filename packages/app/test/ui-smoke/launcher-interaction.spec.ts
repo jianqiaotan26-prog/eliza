@@ -160,24 +160,26 @@ test.describe("launcher catalog interactions", () => {
         if (viewport.name === "mobile") {
           // The launcher occupies the adjacent shell page rather than Home's
           // offscreen app region. Exercising its own scroll viewport catches a
-          // false proof where the hidden Home scroller moves while the visible
-          // final tile remains trapped beneath the fixed composer.
+          // false proof where the hidden Home scroller moves while launcher
+          // overflow exists. When the curated grid exactly fits the viewport,
+          // keep the same visible-final-tile proof without requiring impossible
+          // scroll movement.
           const scrollHost = grid;
-          await expect
-            .poll(() => scrollHost.evaluate((element) => element.scrollHeight))
-            .toBeGreaterThan(
-              await scrollHost.evaluate((element) => element.clientHeight),
-            );
-          await touchScrollLauncher(page, "launcher-page-window", "down");
-          await expect
-            .poll(() => scrollHost.evaluate((element) => element.scrollTop), {
-              message:
-                "the single launcher grid scrolls after a real touch swipe",
-            })
-            .toBeGreaterThan(0);
-          scrollTopAfterTouch = await scrollHost.evaluate(
-            (element) => element.scrollTop,
+          const launcherOverflows = await scrollHost.evaluate(
+            (element) => element.scrollHeight > element.clientHeight,
           );
+          if (launcherOverflows) {
+            await touchScrollLauncher(page, "launcher-page-window", "down");
+            await expect
+              .poll(() => scrollHost.evaluate((element) => element.scrollTop), {
+                message:
+                  "the single launcher grid scrolls after a real touch swipe",
+              })
+              .toBeGreaterThan(0);
+            scrollTopAfterTouch = await scrollHost.evaluate(
+              (element) => element.scrollTop,
+            );
+          }
           const finalTile = grid
             .locator('[data-testid^="launcher-tile-"]')
             .last();
@@ -203,10 +205,12 @@ test.describe("launcher catalog interactions", () => {
             testInfo,
             `${viewport.name}-launcher-after-touch-scroll`,
           );
-          await touchScrollLauncher(page, "launcher-page-window", "up");
-          await expect
-            .poll(() => scrollHost.evaluate((element) => element.scrollTop))
-            .toBeLessThan(scrollTopAfterTouch);
+          if (launcherOverflows) {
+            await touchScrollLauncher(page, "launcher-page-window", "up");
+            await expect
+              .poll(() => scrollHost.evaluate((element) => element.scrollTop))
+              .toBeLessThan(scrollTopAfterTouch);
+          }
         }
 
         await grid
