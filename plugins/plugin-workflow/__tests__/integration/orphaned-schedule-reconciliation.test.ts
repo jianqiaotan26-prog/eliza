@@ -260,6 +260,8 @@ test('quarantined tenant task is disabled at first fire and restart cannot fire 
     const disabledNotifications = notificationsA.list({ category: 'workflow' });
     expect(disabledNotifications).toHaveLength(1);
     expect(disabledNotifications[0]?.title).toContain('disabled');
+    expect(disabledNotifications[0]?.body).toContain('workflow no longer exists');
+
     expect(await firstPair.runtimeA.getTask(orphanTask.id)).toBeNull();
 
     await stopPair(firstPair);
